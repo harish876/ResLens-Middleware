@@ -77,24 +77,26 @@ async function getCpuUsage(req, res) {
  */
 async function getDiskIOPS(req, res) {
     const { from = "now-12h", until = "now", step = 28 } = req.body;
-
-    const baseUrl = buildUrl(getEnv("NODE_EXPORTER_BASE_URL"), {
-        query: "rate(node_disk_writes_completed_total{device='vda',job='node_exporter'}[5m])",
-        start: from,
-        end: until,
-        step,
-    });
-
-    const config = {
-        method: 'get',
-        maxBodyLength: Infinity,
-        url: baseUrl,
-    };
-
     try {
+        const device = getEnv("NODE_EXPORTER_HOST_DEVICE")
+        const job = getEnv("NODE_EXPORTER_JOB_NAME")
+        const baseUrl = buildUrl(getEnv("NODE_EXPORTER_BASE_URL"), {
+            query: `rate(node_disk_writes_completed_total{device="${device}",job="${job}"}[5m])`,
+            start: from,
+            end: until,
+            step,
+        });
+    
+        const config = {
+            method: 'get',
+            maxBodyLength: Infinity,
+            url: baseUrl,
+        };
+        
+        logger.debug("Base URL",baseUrl)
         const response = await axios.request(config);
         const data = response?.data?.data?.result.filter(
-            (val) => val?.metric?.device === "vda" && val?.metric?.job === "node_exporter"
+            (val) => val?.metric?.device === device && val?.metric?.job === job
         );
 
         const formattedResponseData = data.length > 0
@@ -106,7 +108,7 @@ async function getDiskIOPS(req, res) {
 
         return res.send({ data: formattedResponseData });
     } catch (error) {
-        logger.error(error);
+        //logger.error(error);
         return res.status(400).send({
             error: error.message || "An error occurred while fetching the DiskIOPS data",
         });
@@ -126,9 +128,10 @@ async function getDiskWaitTime(req, res) {
     const { from = "now-5m", until = "now", step = 28 } = req.body;
 
     try {
+        const device = getEnv("NODE_EXPORTER_HOST_DEVICE")
         const queries = {
-            readWaitTime: "rate(node_disk_read_time_seconds_total{device='vda'}[5m]) / rate(node_disk_reads_completed_total{device='vda'}[5m])",
-            writeWaitTime: "rate(node_disk_write_time_seconds_total{device='vda'}[5m]) / rate(node_disk_writes_completed_total{device='vda'}[5m])",
+            readWaitTime: `rate(node_disk_read_time_seconds_total{device="${device}"}[5m]) / rate(node_disk_reads_completed_total{device="${device}"}[5m])`,
+            writeWaitTime: `rate(node_disk_write_time_seconds_total{device="${device}"}[5m]) / rate(node_disk_writes_completed_total{device="${device}"}[5m])`,
         };
 
         const responses = await Promise.all(
@@ -175,10 +178,10 @@ async function getDiskWaitTime(req, res) {
  */
 async function getTimeSpentDoingIO(req, res) {
     const { from = "now-5m", until = "now", step = 28 } = req.body;
-
-    const query = "rate(node_disk_io_time_seconds_total{device='vda', job='node_exporter'}[5m])";
-
     try {
+        const device = getEnv("NODE_EXPORTER_HOST_DEVICE")
+        const job = getEnv("NODE_EXPORTER_JOB_NAME")
+        const query = `rate(node_disk_io_time_seconds_total{device="${device}", job="${job}"}[5m])`;
         const baseUrl = buildUrl(getEnv("NODE_EXPORTER_BASE_URL"), {
             query,
             start: from,
@@ -221,9 +224,10 @@ async function getDiskRWData(req, res) {
     const { from = "now-5m", until = "now", step = 28 } = req.body;
 
     try {
+        const device = getEnv("NODE_EXPORTER_HOST_DEVICE")
         const queries = {
-            readMerged: "rate(node_disk_reads_merged_total{device='vda'}[5m])",
-            writeMerged: "rate(node_disk_writes_merged_total{device='vda'}[5m])",
+            readMerged: `rate(node_disk_reads_merged_total{device="${device}"}[5m])`,
+            writeMerged: `rate(node_disk_writes_merged_total{device="${device}"}[5m])`,
         };
 
         const responses = await Promise.all(
