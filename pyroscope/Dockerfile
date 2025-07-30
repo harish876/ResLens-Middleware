@@ -41,4 +41,4 @@ COPY . .
 EXPOSE 4040
 
 
-CMD ["sh", "-c", "if [ \"$ROLE\" = \"server\" ]; then pyroscope server --log-level info --storage-path /host/pyroscope-data; else node connect_pyroscope.js; fi"]
+CMD ["sh", "-c", "if [ \"$ROLE\" = \"server\" ]; then pyroscope server --log-level info --storage-path /host/pyroscope-data --retention 24h; else node connect_pyroscope.js; fi"]
