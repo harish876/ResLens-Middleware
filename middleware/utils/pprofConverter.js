@@ -12,7 +12,7 @@ const execAsync = util.promisify(exec);
 async function convertPprofToMarkdown(profilePath) {
   try {
     // Run pprof command to get text output
-    const cmd = `go tool pprof -text ${profilePath}`;
+    const cmd = `go tool pprof -text -focus='resdb::' -show='resdb::' ${profilePath}`;
     const { stdout, stderr } = await execAsync(cmd);
     
     if (stderr && !stderr.includes('Main binary filename not available')) {
