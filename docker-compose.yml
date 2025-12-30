@@ -18,6 +18,11 @@ services:
       context: ./middleware
     container_name: middleware
     network_mode: "host"
+    environment:
+      - RESILIENTDB_ROOT=/home/ubuntu/incubator-resilientdb
+    volumes:
+      - /home/ubuntu/incubator-resilientdb:/home/ubuntu/incubator-resilientdb
+      - /home/ubuntu/.cache/bazel:/home/ubuntu/.cache/bazel
     depends_on:
       - pyroscope-client
       - process-exporter

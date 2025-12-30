@@ -19,16 +19,16 @@
 */
 
 const express = require("express");
-const { getProfilingData, explainFlamegraph, getProfileMarkdown } = require("../controllers/pyroscope");
 const router = express.Router();
+const resLensTools = require('../controllers/resLensTools');
 
-/**
- * Health check route
- * @route GET /getProfile
- * @returns {Object} 200 - proflingData
- */
-router.post("/getProfile", getProfilingData);
-router.post("/explainFlamegraph", explainFlamegraph);
-router.post("/profileSummary", getProfileMarkdown);
+router.get('/health', resLensTools.health);
+router.post('/seed', resLensTools.startSeeding);
+router.post('/stop', resLensTools.stopSeeding);
+router.get('/status', resLensTools.getSeedingStatus);
+router.post('/get', resLensTools.startGetting);
+router.post('/stop_get', resLensTools.stopGetting);
+router.get('/status_get', resLensTools.getGettingStatus);
+router.get('/', resLensTools.serviceInfo);
 
 module.exports = router;

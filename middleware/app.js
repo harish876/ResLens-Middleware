@@ -20,6 +20,7 @@
 
 const express = require("express");
 const healthRoutes = require("./routes/healthcheck");
+const resLensToolsRoutes = require("./routes/resLensTools")
 const pyroscopeRoutes = require("./routes/pyroscope")
 const nodeExporterRoutes = require("./routes/nodeExporter")
 const statsExporterRoutes = require("./routes/statsExporter")
@@ -35,6 +36,7 @@ app.use(express.json());
 
 // Health check route
 app.use("/api/v1", healthRoutes);
+app.use("/api/v1/reslens-tools", resLensToolsRoutes);
 app.use("/api/v1/pyroscope",pyroscopeRoutes)
 app.use("/api/v1/nodeExporter",nodeExporterRoutes)
 app.use("/api/v1/statsExporter",statsExporterRoutes)

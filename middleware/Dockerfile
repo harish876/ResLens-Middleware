@@ -17,16 +17,15 @@
 
 
 
-FROM node:18-alpine
+FROM node:18
 
 # Install Go for pprof tool
-RUN apk add --no-cache go
+RUN apt-get update && apt-get install -y --no-install-recommends golang-go && rm -rf /var/lib/apt/lists/*
 
 # Verify go installation and PATH is set correctly
 RUN go version && which go
 
 WORKDIR /usr/src/app
-
 
 COPY package*.json ./
 

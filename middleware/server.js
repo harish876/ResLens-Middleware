@@ -23,7 +23,7 @@ const app = require("./app");
 const logger = require("./utils/logger");
 const { getEnv } = require('./utils/envParser');
 
-const PORT = getEnv("PORT",3000);
+const PORT = process.env.MODE === "dev" ? 3003 : getEnv("PORT",3002);
 
 app.listen(PORT, () => {
   logger.info(`Server is running at http://localhost:${PORT}`);

@@ -12,7 +12,7 @@ const execAsync = util.promisify(exec);
 async function convertPprofToMarkdown(profilePath) {
   try {
     // Run pprof command to get text output
-    const cmd = `go tool pprof -text -focus='resdb::' -show='resdb::' ${profilePath}`;
+    const cmd = `go tool pprof -text -show='resdb::' ${profilePath}`;
     const { stdout, stderr } = await execAsync(cmd);
     
     if (stderr && !stderr.includes('Main binary filename not available')) {
@@ -24,6 +24,28 @@ async function convertPprofToMarkdown(profilePath) {
     
     // Convert to markdown
     return toMarkdown(data);
+  } catch (error) {
+    console.error(`Error converting profile: ${error.message}`);
+    throw new Error(`Failed to convert profile: ${error.message}`);
+  }
+}
+
+/**
+ * Convert pprof profile to markdown format
+ * @param {string} profilePath - Path to the .pprof file
+ * @returns {Promise<string>} - Markdown representation of the profile
+ */
+async function convertPprofToMarkdownCustom(profilePath) {
+  try {
+    // Run pprof command to get text output
+    const cmd = `go tool pprof -tree -cum -show='resdb::' ${profilePath}`;
+    const { stdout, stderr } = await execAsync(cmd);
+    
+    if (stderr && !stderr.includes('Main binary filename not available')) {
+      console.error('pprof warning:', stderr);
+    }
+
+    return stdout
   } catch (error) {
     console.error(`Error converting profile: ${error.message}`);
     throw new Error(`Failed to convert profile: ${error.message}`);
@@ -139,5 +161,6 @@ function toMarkdown(data) {
 }
 
 module.exports = {
-  convertPprofToMarkdown
+  convertPprofToMarkdown,
+  convertPprofToMarkdownCustom
 };
