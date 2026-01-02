@@ -1,0 +1,97 @@
+server:
+  http_listen_port: 3101
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: resilientdb-replicas
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: resilientdb
+          service: server
+          replica: "0"
+          __path__: ${LOG_BASE_PATH}/server0.log
+
+      - targets:
+          - localhost
+        labels:
+          job: resilientdb
+          service: server
+          replica: "1"
+          __path__: ${LOG_BASE_PATH}/server1.log
+
+      - targets:
+          - localhost
+        labels:
+          job: resilientdb
+          service: server
+          replica: "2"
+          __path__: ${LOG_BASE_PATH}/server2.log
+
+      - targets:
+          - localhost
+        labels:
+          job: resilientdb
+          service: server
+          replica: "3"
+          __path__: ${LOG_BASE_PATH}/server3.log
+
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<level>[EIWF])(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}) (?P<time>\d{2}:\d{2}:\d{2})\.(?P<micro>\d+)\s+(?P<threadid>\d+)\s+(?P<file>[^:]+):(?P<line>\d+)\]\s+(?P<message>.*)$'
+          on_error: keep
+      - template:
+          source: level
+          template: '{{ if eq .level "E" }}ERROR{{ else if eq .level "W" }}WARN{{ else if eq .level "I" }}INFO{{ else if eq .level "F" }}FATAL{{ else }}UNKNOWN{{ end }}'
+      - template:
+          source: timestamp
+          template: '{{ .year }}-{{ .month }}-{{ .day }} {{ .time }}'
+      - timestamp:
+          source: timestamp
+          format: "2006-01-02 15:04:05"
+          location: UTC
+          on_error: keep
+      - labels:
+          level:
+          threadid:
+          file:
+      - output:
+          source: message
+
+  - job_name: resilientdb-client
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: resilientdb
+          service: client
+          __path__: ${LOG_BASE_PATH}/client.log
+
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<level>[EIWF])(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}) (?P<time>\d{2}:\d{2}:\d{2})\.(?P<micro>\d+)\s+(?P<threadid>\d+)\s+(?P<file>[^:]+):(?P<line>\d+)\]\s+(?P<message>.*)$'
+          on_error: keep
+      - template:
+          source: level
+          template: '{{ if eq .level "E" }}ERROR{{ else if eq .level "W" }}WARN{{ else if eq .level "I" }}INFO{{ else if eq .level "F" }}FATAL{{ else }}UNKNOWN{{ end }}'
+      - template:
+          source: timestamp
+          template: '{{ .year }}-{{ .month }}-{{ .day }} {{ .time }}'
+      - timestamp:
+          source: timestamp
+          format: "2006-01-02 15:04:05"
+          location: UTC
+          on_error: keep
+      - labels:
+          level:
+          threadid:
+          file:
+      - output:
+          source: message

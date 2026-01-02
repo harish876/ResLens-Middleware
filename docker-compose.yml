@@ -34,19 +34,18 @@ services:
     network_mode: "host"
     environment:
       - ROLE=server
-    # Removed ports section since network_mode: "host" is incompatible with port bindings
     volumes:
-      - ./pyroscope-data:/host/pyroscope-data # Mount host filesystem for storage
-    privileged: true # Required for eBPF and accessing host resources
+      - ./pyroscope-data:/host/pyroscope-data 
+    privileged: true 
 
   pyroscope-client:
     build:
       context: ./pyroscope
     container_name: pyroscope-client
-    network_mode: "host" # Allows access to the host network
+    network_mode: "host"
     environment:
       - ROLE=client
-      - PYROSCOPE_SERVER_ADDRESS=http://0.0.0.0:4040 # Pyroscope server running on the host
+      - PYROSCOPE_SERVER_ADDRESS=http://0.0.0.0:4040
     privileged: true 
     pid: "host"
 
@@ -60,3 +59,65 @@ services:
     volumes:
       - /proc:/host/proc
       - ./process-exporter:/config
+
+  # Log aggregation with Loki
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    network_mode: host
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml
+      - loki-storage:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/loki/api/v1/status/buildinfo"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Log shipper with Promtail
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    network_mode: host
+    environment:
+      - LOG_BASE_PATH=/home/ubuntu/incubator-resilientdb
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - /home/ubuntu/incubator-resilientdb:/home/ubuntu/incubator-resilientdb:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    depends_on:
+      - loki
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3101/ready"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Grafana UI for visualizing logs and metrics
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    network_mode: host
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - loki
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  loki-storage:
+  grafana-storage:
