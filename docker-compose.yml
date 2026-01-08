@@ -19,9 +19,9 @@ services:
     container_name: middleware
     network_mode: "host"
     environment:
-      - RESILIENTDB_ROOT=/home/ubuntu/incubator-resilientdb
+      - RESILIENTDB_ROOT=/home/ubuntu/production/incubator-resilientdb
     volumes:
-      - /home/ubuntu/incubator-resilientdb:/home/ubuntu/incubator-resilientdb
+      - /home/ubuntu/production/incubator-resilientdb:/home/ubuntu/production/incubator-resilientdb:ro
       - /home/ubuntu/.cache/bazel:/home/ubuntu/.cache/bazel
     depends_on:
       - pyroscope-client
@@ -83,10 +83,10 @@ services:
     container_name: promtail
     network_mode: host
     environment:
-      - LOG_BASE_PATH=/home/ubuntu/incubator-resilientdb
+      - LOG_BASE_PATH=${RESILIENTDB_ROOT}
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml
-      - /home/ubuntu/incubator-resilientdb:/home/ubuntu/incubator-resilientdb:ro
+      - ${RESILIENTDB_ROOT}:${RESILIENTDB_ROOT}:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
     command: -config.file=/etc/promtail/config.yml -config.expand-env=true

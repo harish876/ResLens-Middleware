@@ -20,26 +20,56 @@
 
 const { exec } = require("child_process");
 
-exec("ps aux | grep kv_service | grep -v grep | head -n 1 | awk '{print $1}'", (err, stdout, stderr) => {
+const server_addr = process.env.PYROSCOPE_SERVER_ADDRESS || "http://localhost:4040";
+
+// Connect all kv_service replicas
+exec("pgrep -f kv_service", (err, stdout, stderr) => {
   if (err) {
-    console.error(`Error finding kv_service process: ${stderr}`);
+    console.error(`Error finding kv_service processes: ${stderr}`);
+    return;
+  }
+
+  const pids = stdout.trim().split('\n').filter(pid => pid && /^\d+$/.test(pid));
+
+  if (pids.length > 0) {
+    let replicaNum = 1;
+    pids.forEach((pid) => {
+      console.log(`PID of CPP Client-${replicaNum} (kv_service): ${pid}`);
+      const command = `pyroscope connect --server-address ${server_addr} --application-name cpp_client_${replicaNum} --spy-name ebpfspy --pid ${pid}`;
+      exec(command, (err, stdout, stderr) => {
+        if (err) {
+          console.error(`Error running pyroscope connect for kv_service replica ${replicaNum}: ${stderr}`);
+          return;
+        }
+        console.log(`Pyroscope connected to kv_service replica ${replicaNum} successfully:\n${stdout}`);
+      });
+      replicaNum++;
+    });
+  } else {
+    console.log("kv_service processes not found.");
+  }
+});
+
+// Connect crow_service
+exec("pgrep -f crow_service_main | head -n 1", (err, stdout, stderr) => {
+  if (err) {
+    console.error(`Error finding crow_service_main process: ${stderr}`);
     return;
   }
 
   const pid = stdout.trim();
 
   if (pid) {
-    console.log("PID of CPP Client-1", pid)
-    const server_addr = process.env.PYROSCOPE_SERVER_ADDRESS  || "http://localhost:4040"
-    const command = `pyroscope connect --server-address ${server_addr} --application-name cpp_client_1 --spy-name ebpfspy --pid ${pid}`;
+    console.log("PID of Crow Service (GraphQL HTTP Server):", pid);
+    const command = `pyroscope connect --server-address ${server_addr} --application-name crow_service_main --spy-name ebpfspy --pid ${pid}`;
     exec(command, (err, stdout, stderr) => {
       if (err) {
-        console.error(`Error running pyroscope connect: ${stderr}`);
+        console.error(`Error running pyroscope connect for crow_service: ${stderr}`);
         return;
       }
-      console.log(`Pyroscope connected successfully:\n${stdout}`);
+      console.log(`Pyroscope connected to crow_service successfully:\n${stdout}`);
     });
   } else {
-    console.log("kv_service process not found.");
+    console.log("crow_service_main process not found.");
   }
 });
