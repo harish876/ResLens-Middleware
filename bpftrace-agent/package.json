@@ -1,0 +1,14 @@
+{
+  "name": "bpftrace-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "level": "^8.0.1"
+  }
+}

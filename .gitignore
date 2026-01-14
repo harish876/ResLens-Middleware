@@ -3,3 +3,6 @@ pyroscope-data
 .env
 cache
 .history
+
+# Local LevelDB for bpftrace-agent (default DB_PATH)
+bpftrace-agent-db

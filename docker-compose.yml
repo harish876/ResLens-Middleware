@@ -27,6 +27,29 @@ services:
       - pyroscope-client
       - process-exporter
 
+  bpftrace-agent:
+    build:
+      context: ./bpftrace-agent
+    container_name: bpftrace-agent
+    network_mode: "host"
+    privileged: true
+    pid: "host"
+    environment:
+      - PORT=7500
+      - RESILIENTDB_ROOT=/home/ubuntu/production/incubator-resilientdb
+      - DB_PATH=/var/lib/bpftrace-agent/db
+    volumes:
+      - /home/ubuntu/production/incubator-resilientdb:/home/ubuntu/production/incubator-resilientdb:ro
+      - /home/ubuntu/.cache/bazel:/home/ubuntu/.cache/bazel
+      - /lib/modules:/lib/modules:ro
+      - /usr/src:/usr/src:ro
+      - /sys:/sys:ro
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /sys/kernel/tracing:/sys/kernel/tracing:rw
+      - /sys/kernel/debug:/sys/kernel/debug:rw
+      - bpftrace-agent-db:/var/lib/bpftrace-agent/db
+    restart: unless-stopped
+
   pyroscope-server:
     build:
       context: ./pyroscope
@@ -121,3 +144,4 @@ services:
 volumes:
   loki-storage:
   grafana-storage:
+  bpftrace-agent-db:
